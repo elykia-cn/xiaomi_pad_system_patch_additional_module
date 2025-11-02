@@ -311,44 +311,6 @@ patch_A14_ImmerseFreeformBottomCaption() {
     echo '修补沉浸自由窗口小白条完成'
 }
 
-patch_ImmerseFreeformBottomCaption() {
-
-    local MiuiBottomDecorationSmali=$(find $workfile/MiuiSystemUI/smali/*/com/android/wm/shell/multitasking/miuimultiwinswitch/miuiwindowdecor -type f -iname "MiuiBottomDecoration.smali")
-    
-    if [ -z "$MiuiBottomDecorationSmali" ]; then
-      echo "❌ 未找到 MiuiBottomDecoration.smali"
-      exit 1
-    fi
-
-
-    # 查找inBottomCaptionInsetsBlackList_start_line
-    local inBottomCaptionInsetsBlackList_start_line=$(grep -n -m 1 ".method private inBottomCaptionInsetsBlackList()Z" "$MiuiBottomDecorationSmali" | cut -d: -f1)
-    echo "inBottomCaptionInsetsBlackList_start_line=$inBottomCaptionInsetsBlackList_start_line"
-    # 从createBottomCaption_start_line开始查找第一个.end method行号
-    local inBottomCaptionInsetsBlackList_end_line=$(tail -n +"$inBottomCaptionInsetsBlackList_start_line" $MiuiBottomDecorationSmali | grep -n -m 1 ".end method" | cut -d: -f1)
-    echo "inBottomCaptionInsetsBlackList_end_line=$inBottomCaptionInsetsBlackList_end_line"
-    # 计算.end method的行号
-    local actual_inBottomCaptionInsetsBlackList_end_line=$((inBottomCaptionInsetsBlackList_start_line + inBottomCaptionInsetsBlackList_end_line - 1))
-    echo "actual_inBottomCaptionInsetsBlackList_end_line=$actual_inBottomCaptionInsetsBlackList_end_line"
-    # 删除原方法
-    sed -i "${inBottomCaptionInsetsBlackList_start_line},${actual_inBottomCaptionInsetsBlackList_end_line}d" $MiuiBottomDecorationSmali
-    # 插入Patch后的方法
-    sed -i "$((inBottomCaptionInsetsBlackList_start_line - 1))r $workfile/inBottomCaptionInsetsBlackList.smali" $MiuiBottomDecorationSmali
-
-    echo '修补沉浸自由窗口小白条完成'
-}
-
-patch_ImmerseFreeformBottomCaptionEntry() {
-  if [ "$android_target_version" -ge 15 ]; then
-    patch_ImmerseFreeformBottomCaption
-  elif [ "$android_target_version" -eq 14 ]; then
-    patch_A14_ImmerseFreeformBottomCaption
-  else
-    echo "❌ Unsupported Android version for immerse freeform bottom caption patch: $android_target_version"
-    exit 1
-  fi
-}
-
 ### 自定义窗口控制器黑名单(A14)
 patch_A14_CustomDotBlackList() {
 
@@ -410,7 +372,6 @@ patch_CustomDotBlackListEntry() {
 patch_VerticalSplitEntry
 patch_CvwFullEntry
 patch_DisableFreeformBottomCaptionEntry
-patch_ImmerseFreeformBottomCaptionEntry
 patch_CustomDotBlackListEntry
 
 ### 兼容小米错误的资源数据-@style/null
